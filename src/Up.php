@@ -1,7 +1,8 @@
 <?php namespace Loilo\FindUp;
 
-use RuntimeException;
 use InvalidArgumentException;
+use Loilo\Traceback\Traceback;
+use RuntimeException;
 
 define('UP_STOP_SYMBOL', uniqid('up-', true));
 define('UP_SKIP_SYMBOL', uniqid('up-', true));
@@ -32,7 +33,7 @@ class Up
 
         // Validate $directory argument
         if (is_null($directory)) {
-            $directory = static::getCallingDir();
+            $directory = Traceback::dir();
         } elseif (is_string($directory)) {
             $directory = $directory;
 
@@ -48,39 +49,6 @@ class Up
 
         // Perform search
         return static::walk($matcher, $directory);
-    }
-
-    /**
-     * Get the directory of the file from which the find() method was called
-     *
-     * @return string
-     *
-     * @throws RuntimeException When no calling file can be found from the trace or
-     *                          the found file does not exist (e.g. in a CLI context)
-     */
-    protected static function getCallingDir(): string
-    {
-        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-
-        foreach ($trace as $traceItem) {
-            if ($traceItem['file'] !== __FILE__) {
-                $callingFile = $traceItem['file'];
-                break;
-            }
-        }
-
-        if (!isset($callingFile)) {
-            throw new RuntimeException('Starting directory cannot be read from the call stack');
-        }
-
-        if (!is_file($callingFile)) {
-            throw new RuntimeException(sprintf(
-                'Calling file "%s" (determined from call stack) not found',
-                $callingFile
-            ));
-        }
-
-        return dirname($callingFile);
     }
 
     /**
