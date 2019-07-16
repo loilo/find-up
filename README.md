@@ -1,4 +1,8 @@
-# find-up
+<div align="center">
+  <img alt="FindUp logo: a folder icon with an upwards arrow in front" src="find-up.svg" width="220" height="189">
+</div>
+
+# FindUp
 ![Test status on Travis](https://badgen.net/travis/loilo/find-up?label=tests&icon=travis)
 ![Version on packagist.org](https://badgen.net/packagist/v/loilo/find-up)
 
