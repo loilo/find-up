@@ -1,4 +1,7 @@
 # find-up
+![Test status on Travis](https://badgen.net/travis/loilo/find-up?label=tests&icon=travis)
+![Version on packagist.org](https://badgen.net/packagist/v/loilo/find-up)
+
 Find a file by walking up ancestor directories (e.g. a `composer.json` from inside a project).
 
 ## Installation

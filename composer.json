@@ -1,6 +1,7 @@
 {
     "name": "loilo/find-up",
     "description": "Find a file by walking up ancestor directories",
+    "version": "1.0.0",
     "type": "library",
     "require": {
         "php": ">= 7.1"
