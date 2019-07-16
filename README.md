@@ -3,8 +3,8 @@
 </div>
 
 # FindUp
-![Test status on Travis](https://badgen.net/travis/loilo/find-up?label=tests&icon=travis)
-![Version on packagist.org](https://badgen.net/packagist/v/loilo/find-up)
+[![Test status on Travis](https://badgen.net/travis/loilo/find-up?label=tests&icon=travis)](https://travis-ci.org/loilo/find-up)
+[![Version on packagist.org](https://badgen.net/packagist/v/loilo/find-up)](https://packagist.org/packages/loilo/find-up)
 
 Find a file by walking up ancestor directories (e.g. a `composer.json` from inside a project).
 
