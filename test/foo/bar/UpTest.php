@@ -4,14 +4,15 @@ declare(strict_types=1);
 namespace Loilo\FindUp\Test;
 
 use Loilo\FindUp\Up;
+use Loilo\NodePath\Path;
 use PHPUnit\Framework\TestCase;
-use Webmozart\PathUtil\Path;
+use RuntimeException;
 
 final class UpTest extends TestCase
 {
     protected function resolve(...$parts)
     {
-        return Path::canonicalize(Path::join(__DIR__, ...$parts));
+        return Path::join(__DIR__, ...$parts);
     }
 
     public function testFindsNameInSameDirectory(): void
@@ -77,7 +78,7 @@ final class UpTest extends TestCase
         );
     }
 
-    public function testPerformsSkip(): void
+    public function testPerformsLegacySkip(): void
     {
         $this->assertEquals(
             $this->resolve('../parent-2fd7a53ad64de.txt'),
@@ -87,19 +88,58 @@ final class UpTest extends TestCase
                 }
 
                 return $file === 'self-a0da2db33b5a2.txt' || $file === 'parent-2fd7a53ad64de.txt';
-            }, $this->resolve('..')),
+            }, $this->resolve('.')),
             'Unexpectedly found self-a0da2db33b5a2.txt where it should have skipped the self directory'
         );
     }
 
-    public function testPerformsStop(): void
+    public function testPerformsSkip(): void
     {
-        $parentDir = $this->resolve('../..');
+        $this->assertEquals(
+            $this->resolve('../parent-2fd7a53ad64de.txt'),
+            Up::find(function ($file, $directory) {
+                if ($directory === __DIR__) {
+                    return Up::skip();
+                }
+
+                return $file === 'self-a0da2db33b5a2.txt' || $file === 'parent-2fd7a53ad64de.txt';
+            }, $this->resolve('.')),
+            'Unexpectedly found self-a0da2db33b5a2.txt where it should have skipped the self directory'
+        );
+    }
+
+    public function testPerformsSkipWithLevels(): void
+    {
+        $this->assertEquals(
+            $this->resolve('../../grandparent-5d2da8c50a6b4.txt'),
+            Up::find(function ($file, $directory) {
+                if ($directory === __DIR__) {
+                    return Up::skip(2);
+                }
+
+                return $file === 'self-a0da2db33b5a2.txt' || $file === 'parent-2fd7a53ad64de.txt' || $file === 'grandparent-5d2da8c50a6b4.txt';
+            }, $this->resolve('.')),
+            'Unexpectedly found self-a0da2db33b5a2.txt or parent-2fd7a53ad64de.txt where it should have skipped the self and parent directories'
+        );
+    }
+
+    public function testFailsSkipWithInvalidLevels(): void
+    {
+        $this->expectException(RuntimeException::class);
+
+        Up::find(function () {
+            return Up::skip(0);
+        }, $this->resolve('.'));
+    }
+
+    public function testPerformsLegacyStop(): void
+    {
+        $grandParentDir = $this->resolve('../..');
 
         $this->assertEquals(
             $this->resolve('../parent-2fd7a53ad64de.txt'),
-            Up::find(function ($file, $directory) use ($parentDir) {
-                if ($directory === $parentDir) {
+            Up::find(function ($file, $directory) use ($grandParentDir) {
+                if ($directory === $grandParentDir) {
                     return Up::STOP;
                 }
 
@@ -110,8 +150,8 @@ final class UpTest extends TestCase
 
         $this->assertEquals(
             null,
-            Up::find(function ($file, $directory) use ($parentDir) {
-                if ($directory === $parentDir) {
+            Up::find(function ($file, $directory) use ($grandParentDir) {
+                if ($directory === $grandParentDir) {
                     return Up::STOP;
                 }
 
@@ -119,5 +159,103 @@ final class UpTest extends TestCase
             }, $this->resolve('..')),
             'Unexpectedly found grandparent-5d2da8c50a6b4.txt where search should have been stopped before'
         );
+    }
+
+    public function testPerformsStop(): void
+    {
+        $grandParentDir = $this->resolve('../..');
+
+        $this->assertEquals(
+            $this->resolve('../parent-2fd7a53ad64de.txt'),
+            Up::find(function ($file, $directory) use ($grandParentDir) {
+                if ($directory === $grandParentDir) {
+                    return Up::stop();
+                }
+
+                return $file === 'parent-2fd7a53ad64de.txt';
+            }, $this->resolve('..')),
+            'Did not find parent-2fd7a53ad64de.txt although the stop should have only happened after that'
+        );
+
+        $this->assertEquals(
+            null,
+            Up::find(function ($file, $directory) use ($grandParentDir) {
+                if ($directory === $grandParentDir) {
+                    return Up::stop();
+                }
+
+                return $file === 'grandparent-5d2da8c50a6b4.txt';
+            }, $this->resolve('..')),
+            'Unexpectedly found grandparent-5d2da8c50a6b4.txt where search should have been stopped before'
+        );
+    }
+
+    public function testPerformsStopWithRelativeCustomResult(): void
+    {
+        $parentDir = $this->resolve('..');
+
+        $this->assertEquals(
+            $this->resolve('../stop.txt'),
+            Up::find(function ($file, $directory) use ($parentDir) {
+                if ($directory === $parentDir) {
+                    return Up::stop('stop.txt');
+                }
+
+                return $file === 'parent-2fd7a53ad64de.txt';
+            }, $this->resolve('.')),
+            'Unexpectedly found parent-2fd7a53ad64de.txt although the stop should have provided a stop.txt'
+        );
+    }
+
+    public function testPerformsStopWithAbsoluteCustomResult(): void
+    {
+        $parentDir = $this->resolve('..');
+        $stopFile = $this->resolve('stop.txt');
+
+        $this->assertEquals(
+            $stopFile,
+            Up::find(function ($file, $directory) use ($stopFile, $parentDir) {
+                if ($directory === $parentDir) {
+                    return Up::stop($stopFile);
+                }
+
+                return $file === 'parent-2fd7a53ad64de.txt';
+            }, $this->resolve('.')),
+            'Unexpectedly found parent-2fd7a53ad64de.txt although the stop should have provided a stop.txt'
+        );
+    }
+
+    public function testPerformsJump(): void
+    {
+        $parentDir = $this->resolve('..');
+        $otherDir = $this->resolve('../baz');
+
+        $this->assertEquals(
+            $this->resolve('../baz/other-1b1b88d1080de.txt'),
+            Up::find(function ($file, $directory) use ($parentDir, $otherDir) {
+                if ($directory === $parentDir) {
+                    return Up::jump($otherDir);
+                }
+
+                return $file === 'other-1b1b88d1080de.txt';
+            }, $this->resolve('.')),
+            'Did not find other-1b1b88d1080de.txt although the jump should have gone to its parent directory'
+        );
+    }
+
+    public function testFailsJumpToVisited(): void
+    {
+        $this->expectException(RuntimeException::class);
+
+        $selfDir = $this->resolve('.');
+        $parentDir = $this->resolve('..');
+
+        Up::find(function ($file, $directory) use ($selfDir, $parentDir) {
+            if ($directory === $parentDir) {
+                return Up::jump($selfDir);
+            }
+
+            return $file === 'parent-2fd7a53ad64de.txt';
+        }, $selfDir);
     }
 }
