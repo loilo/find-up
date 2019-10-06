@@ -57,8 +57,8 @@ Up::find(function ($file, $directory) {
 });
 ```
 
-#### Prematurely Stop Searching
-You can stop the search before reaching the filesystem root by returning a `Up::stop()` call. For example, if you know that your `composer.json` is not found upwards from the `/var/www` folder, you can break out of the search:
+#### Stop Searching Prematurely
+You can stop the search before reaching the filesystem root by returning an `Up::stop()` call. For example, if you know that your `composer.json` is not found upwards from the `/var/www` folder, you can break out of the search:
 
 ```php
 Up::find(function ($file, $directory) {
@@ -89,7 +89,7 @@ Up::find(function ($file, $directory) {
 > This technique still works, but it's deprecated and it's recommended to use `Up::stop()` instead.
 
 #### Skip Folder
-If you are in a directory of which you're sure it does not contain the searched file, you may avoid walking through all its files by returning an `Up::skip()` constant:
+If you are in a directory of which you're sure it does not contain the searched file, you may avoid walking through all its files by returning `Up::skip()`:
 
 ```php
 Up::find(function ($file, $directory) {
