@@ -30,7 +30,7 @@ composer require loilo/find-up
 use Loilo\FindUp\Up;
 
 // Get the project's composer.json's path by
-// walking up from the current working directory
+// walking up from /var/www/project/src/foo
 Up::find('composer.json') === '/var/www/project/composer.json';
 ```
 
